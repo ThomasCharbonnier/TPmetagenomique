@@ -69,8 +69,54 @@ def get_arguments():
                         default="OTU.fasta", help="Output file")
     return parser.parse_args()
 
+"""
 def read_fasta(amplicon_file, minseqlen):
-    pass
+    if(isfile(amplicon_file)):
+        with gzip.open(amplicon_file, 'r') as f:
+            file_content = f.read().decode('utf-8')
+            lines = str(file_content).split('\n')
+            L=[]
+            seq=""
+            for line in lines:
+                print(line)
+
+                if line=="":
+                    pass
+                elif (line[0] ==">"):
+                    if (seq!=""):
+                        L.append(seq)
+                        seq=""
+                    
+                else:
+                    seq=seq+str(line)
+                    
+            L.append(seq)
+            print(L)
+
+            for l in iter(L):
+                if len(L)<minseqlen :
+                    yield l
+"""
+def read_fasta(amplicon_file, minseqlen):
+    if(isfile(amplicon_file)):
+        with gzip.open(amplicon_file, 'r') as f:
+            file_content = f.read().decode('utf-8')
+            lines = iter(str(file_content).split('\n'))
+            liste=[]
+            seq=''
+            for line in lines:
+                if len(line) != 0:
+                    if line[0]=='>':
+                        if seq != '':
+                            liste.append(seq)
+                        seq=''
+                    else:
+                        seq=seq+line
+            for seq in iter(liste):
+                if len(seq)>=minseqlen:
+                    yield seq
+
+
 
 
 def dereplication_fulllength(amplicon_file, minseqlen, mincount):
