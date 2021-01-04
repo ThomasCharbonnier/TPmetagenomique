@@ -143,12 +143,32 @@ def dereplication_fulllength(amplicon_file, minseqlen, mincount):
 
     for keys,value in sorted(dic.items(),key=lambda x: x[1],reverse=True):
         if value >= mincount:
-
             yield [keys,value]
 
 
 def get_chunks(sequence, chunk_size):
-    pass
+    L=[]
+    j=0
+    temp=""
+    for i in range(len(sequence)):
+        temp+=sequence[i]
+        if (j==chunk_size-1):
+            L.append(temp)
+            temp=""
+            j=0
+        else:
+            j+=1
+    try:
+        len(L)>=4
+    except:
+        raise ValueError
+    else:
+        return L
+    
+            
+    
+
+
 
 def get_unique(ids):
     return {}.fromkeys(ids).keys()
