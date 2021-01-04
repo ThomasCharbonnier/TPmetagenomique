@@ -165,10 +165,6 @@ def get_chunks(sequence, chunk_size):
     else:
         return L
     
-            
-    
-
-
 
 def get_unique(ids):
     return {}.fromkeys(ids).keys()
@@ -178,10 +174,20 @@ def common(lst1, lst2):
     return list(set(lst1) & set(lst2))
 
 def cut_kmer(sequence, kmer_size):
-    pass
+    for i in range(len(sequence) - kmer_size +1):
+        yield sequence[i:i+kmer_size]
+
 
 def get_identity(alignment_list):
-    pass
+    c=0
+    for i in range(len(alignment_list[0])):
+        if (alignment_list[0][i]==alignment_list[1][i]):
+            c+=1
+    return c/len(alignment_list[0])*100
+        
+
+
+    
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
