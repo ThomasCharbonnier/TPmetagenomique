@@ -112,15 +112,39 @@ def read_fasta(amplicon_file, minseqlen):
                         seq=''
                     else:
                         seq=seq+line
+            liste.append(seq)
             for seq in iter(liste):
                 if len(seq)>=minseqlen:
                     yield seq
 
 
-
-
+"""
 def dereplication_fulllength(amplicon_file, minseqlen, mincount):
-    pass
+    dic = {}
+    for gen in read_fasta(amplicon_file,minseqlen):
+        if gen in dic:
+            dic[gen]+=1
+        else:
+            dic[gen]=1
+    dictio = sorted(dic.items(),key=lambda x: x[1],reverse=True)
+    print(type(dictio))
+    for keys,value in dictio.items():
+        if value >= mincount:
+
+            yield [keys,value]
+"""
+def dereplication_fulllength(amplicon_file, minseqlen, mincount):
+    dic = {}
+    for gen in read_fasta(amplicon_file,minseqlen):
+        if gen in dic:
+            dic[gen]+=1
+        else:
+            dic[gen]=1
+
+    for keys,value in sorted(dic.items(),key=lambda x: x[1],reverse=True):
+        if value >= mincount:
+
+            yield [keys,value]
 
 
 def get_chunks(sequence, chunk_size):
