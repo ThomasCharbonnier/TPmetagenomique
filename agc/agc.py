@@ -229,7 +229,6 @@ def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, 
     L=[]
     first=True
     for seq  in lst:
-        print(seq)
         if (first):
             OTU.append(seq)
             first = False
@@ -246,7 +245,12 @@ def fill(text, width=80):
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def write_OTU(OTU_list, output_file):
-    pass
+    with open(output_file, "w") as f:
+        for k, _ in enumerate(OTU_list):
+            f.write(">OTU_" + str(k + 1) + " occurrence:"+ str(OTU_list[k][1]) + "\n")
+            f.write(fill(str(OTU_list[k][0])))
+            f.write("\n")
+
 #==============================================================
 # Main program
 #==============================================================
