@@ -223,47 +223,23 @@ def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
         
         id_seq +=1
 
-# def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-#     """
-#     """
-#     dfr_lst = dereplication_fulllength(amplicon_file, minseqlen, mincount)
-#     kmer_dict = {}
-#     perc_identity_matrix = []
-#     id_seq = 0
-
-#     for sequence in dfr_lst:
-#         segments = get_chunks(sequence[0], chunk_size)
-#         chunk_mates = []
-
-#         for seq in segments:
-#             kmer_dict = get_unique_kmer(kmer_dict,sequence[0],id_seq,kmer_size)
-#             mates = search_mates(kmer_dict, seq, kmer_size)
-#             chunk_mates.append(mates)
-#         com = []
-
-#         for j in range(len(chunk_mates)):
-#             com = common(com, chunk_mates[j])
-
-#         if len(com) > 1:
-#             for f in com[0:2]:
-#                 print(f)
-#                 sequ = get_chunks(sequence, chunk_size)
-#                 perc_identity_matrix = [[]]
-#                 for k, chunk in enumerate(segments):
-#                     align = nw.global_align(chunk, sequ[k])
-#                     identite =  get_identity(align)
-#                     perc_identity_matrix[k].append(identite)
-
-#         print(perc_identity_matrix)
-#         if not detect_chimera(perc_identity_matrix):
-#             yield sequence
-#         id_seq+=1
-
-
-
-
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-    pass
+    OTU = []
+    lst = chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size)
+    L=[]
+    first=True
+    for seq  in lst:
+        print(seq)
+        if (first):
+            OTU.append(seq)
+            first = False
+        else:
+            for j in range(len(L)):
+                if (get_identity(nw.global_align(seq[0],L[j][0])) <= 97) :
+                    OTU.append(seq)
+        L.append(seq)
+    return OTU
+
 
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
