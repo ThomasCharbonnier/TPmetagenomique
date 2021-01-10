@@ -158,7 +158,6 @@ def search_mates(kmer_dict, sequence, kmer_size):
     kmer_gen = cut_kmer( sequence, kmer_size)
     for kmer in kmer_gen:
         if kmer in kmer_dict:
-            #print(kmer_dict[kmer])
             for i in kmer_dict[kmer]:
                 cnt[i] += 1
     mostcommons = cnt.most_common(8)
@@ -191,12 +190,9 @@ def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
         perc_identity_matrix = []
         sequence_list.append(sequence[0])
         segments = get_chunks(sequence[0],chunk_size)
-
-        
-        
+  
         #division de chaque sequence candidate en 4 segments de longueur chunk_size
         for seg in segments:
-
             kmer_dict = get_unique_kmer(kmer_dict,seg,id_seq,kmer_size)
         mates = search_mates(kmer_dict, sequence[0], kmer_size)
 
@@ -219,7 +215,6 @@ def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
             if not detect_chimera(perc_identity_matrix):
 
                 yield sequence
-        #faire la matrice pour detect chimera
         
         id_seq +=1
 
@@ -251,15 +246,17 @@ def write_OTU(OTU_list, output_file):
             f.write(fill(str(OTU_list[k][0])))
             f.write("\n")
 
-#==============================================================
-# Main program
-#==============================================================
 def main():
     """
     Main program function
     """
     # Get arguments
     args = get_arguments()
+
+    print("begin OTU_list")
+    OTU_list = abundance_greedy_clustering(args.amplicon_file, args.minseqlen, args.mincount, args.chunk_size, args.kmer_size)
+    print("writing file")
+    write_OTU(OTU_list,args.output_file)
 
 
 if __name__ == '__main__':
