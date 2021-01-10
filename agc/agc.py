@@ -55,7 +55,7 @@ def get_arguments():
     parser = argparse.ArgumentParser(description=__doc__, usage=
                                      "{0} -h"
                                      .format(sys.argv[0]))
-    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True, 
+    parser.add_argument('-i', '-amplicon_file', dest='amplicon_file', type=isfile, required=True,
                         help="Amplicon is a compressed fasta file (.fasta.gz)")
     parser.add_argument('-s', '-minseqlen', dest='minseqlen', type=int, default = 400,
                         help="Minimum sequence length for dereplication")
@@ -69,34 +69,7 @@ def get_arguments():
                         default="OTU.fasta", help="Output file")
     return parser.parse_args()
 
-"""
-def read_fasta(amplicon_file, minseqlen):
-    if(isfile(amplicon_file)):
-        with gzip.open(amplicon_file, 'r') as f:
-            file_content = f.read().decode('utf-8')
-            lines = str(file_content).split('\n')
-            L=[]
-            seq=""
-            for line in lines:
-                print(line)
 
-                if line=="":
-                    pass
-                elif (line[0] ==">"):
-                    if (seq!=""):
-                        L.append(seq)
-                        seq=""
-                    
-                else:
-                    seq=seq+str(line)
-                    
-            L.append(seq)
-            print(L)
-
-            for l in iter(L):
-                if len(L)<minseqlen :
-                    yield l
-"""
 def read_fasta(amplicon_file, minseqlen):
     if(isfile(amplicon_file)):
         with gzip.open(amplicon_file, 'r') as f:
@@ -118,21 +91,6 @@ def read_fasta(amplicon_file, minseqlen):
                     yield seq
 
 
-"""
-def dereplication_fulllength(amplicon_file, minseqlen, mincount):
-    dic = {}
-    for gen in read_fasta(amplicon_file,minseqlen):
-        if gen in dic:
-            dic[gen]+=1
-        else:
-            dic[gen]=1
-    dictio = sorted(dic.items(),key=lambda x: x[1],reverse=True)
-    print(type(dictio))
-    for keys,value in dictio.items():
-        if value >= mincount:
-
-            yield [keys,value]
-"""
 def dereplication_fulllength(amplicon_file, minseqlen, mincount):
     dic = {}
     for gen in read_fasta(amplicon_file,minseqlen):
@@ -164,13 +122,13 @@ def get_chunks(sequence, chunk_size):
         raise ValueError
     else:
         return L
-    
+
 
 def get_unique(ids):
     return {}.fromkeys(ids).keys()
 
 
-def common(lst1, lst2): 
+def common(lst1, lst2):
     return list(set(lst1) & set(lst2))
 
 def cut_kmer(sequence, kmer_size):
@@ -184,13 +142,125 @@ def get_identity(alignment_list):
         if (alignment_list[0][i]==alignment_list[1][i]):
             c+=1
     return c/len(alignment_list[0])*100
-        
+
+def get_unique_kmer(kmer_dict ,sequence,id_seq,kmer_size):
+    kmer_gen = cut_kmer(sequence,kmer_size)
+    for kmer in kmer_gen:
+        if (kmer_dict.get(kmer)==None):
+            kmer_dict[kmer]=kmer_dict.get(kmer,[id_seq])
+        elif (id_seq not in kmer_dict.get(kmer) ):
+            kmer_dict[kmer].append(id_seq)
+    return kmer_dict
 
 
-    
+def search_mates(kmer_dict, sequence, kmer_size):
+    cnt = Counter()
+    kmer_gen = cut_kmer( sequence, kmer_size)
+    for kmer in kmer_gen:
+        if kmer in kmer_dict:
+            #print(kmer_dict[kmer])
+            for i in kmer_dict[kmer]:
+                cnt[i] += 1
+    mostcommons = cnt.most_common(8)
+    L=[]
+    for i in mostcommons:
+        L.append(i[0])
+    return L
+
+def std(data):
+    return statistics.stdev(data)
+
+def detect_chimera(perc_identity_matrix):
+    L=[]
+    dif_similarites = 0
+    for l in perc_identity_matrix :
+        L.append(std(l))
+        if (l[0] != perc_identity_matrix[0][0] or l[1] != perc_identity_matrix[0][1]):
+            dif_similarites +=1
+    ecart_type_moyen=(statistics.mean(L))
+    return (ecart_type_moyen >5 and dif_similarites >= 2)
+
 
 def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
-    pass
+    gen_seq = dereplication_fulllength(amplicon_file, minseqlen, mincount)
+    kmer_dict ={}
+    id_seq = 0
+    sequence_list = []
+    
+    for sequence in gen_seq:
+        perc_identity_matrix = []
+        sequence_list.append(sequence[0])
+        segments = get_chunks(sequence[0],chunk_size)
+
+        
+        
+        #division de chaque sequence candidate en 4 segments de longueur chunk_size
+        for seg in segments:
+
+            kmer_dict = get_unique_kmer(kmer_dict,seg,id_seq,kmer_size)
+        mates = search_mates(kmer_dict, sequence[0], kmer_size)
+
+        if len(mates)<=2 :
+            yield sequence
+        else:
+            parents=[get_chunks(sequence_list[mates[0]],chunk_size),get_chunks(sequence_list[mates[1]],chunk_size)]
+            
+                
+            for j,chunk in enumerate(segments):
+                L=[]
+                for i in range(len(parents)):
+
+                    text=nw.global_align(chunk, parents[i][j])
+                    r = get_identity(text)
+
+                    L.append(r)
+                perc_identity_matrix.append(L)
+
+            if not detect_chimera(perc_identity_matrix):
+
+                yield sequence
+        #faire la matrice pour detect chimera
+        
+        id_seq +=1
+
+# def chimera_removal(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
+#     """
+#     """
+#     dfr_lst = dereplication_fulllength(amplicon_file, minseqlen, mincount)
+#     kmer_dict = {}
+#     perc_identity_matrix = []
+#     id_seq = 0
+
+#     for sequence in dfr_lst:
+#         segments = get_chunks(sequence[0], chunk_size)
+#         chunk_mates = []
+
+#         for seq in segments:
+#             kmer_dict = get_unique_kmer(kmer_dict,sequence[0],id_seq,kmer_size)
+#             mates = search_mates(kmer_dict, seq, kmer_size)
+#             chunk_mates.append(mates)
+#         com = []
+
+#         for j in range(len(chunk_mates)):
+#             com = common(com, chunk_mates[j])
+
+#         if len(com) > 1:
+#             for f in com[0:2]:
+#                 print(f)
+#                 sequ = get_chunks(sequence, chunk_size)
+#                 perc_identity_matrix = [[]]
+#                 for k, chunk in enumerate(segments):
+#                     align = nw.global_align(chunk, sequ[k])
+#                     identite =  get_identity(align)
+#                     perc_identity_matrix[k].append(identite)
+
+#         print(perc_identity_matrix)
+#         if not detect_chimera(perc_identity_matrix):
+#             yield sequence
+#         id_seq+=1
+
+
+
 
 def abundance_greedy_clustering(amplicon_file, minseqlen, mincount, chunk_size, kmer_size):
     pass
